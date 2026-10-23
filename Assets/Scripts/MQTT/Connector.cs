@@ -16,11 +16,8 @@ public class Connector : MonoBehaviour
   public event Action OnConnected;
 
   [Header("MQTT Configuration")]
-  [SerializeField] private string broker = "urlbroker";
-  [SerializeField] private int port = 8443;
-  [SerializeField] private string username = "******";
-  [SerializeField] private string password = "****";
   [SerializeField] private string[] topics;
+  private MqttSecrets secrets;
   [SerializeField] private string publishTopic = "FABLAB_21_22/unity/test/out";
   [SerializeField] private string messageToSend = "Bonjour de Unity 6.0 !";
 
@@ -34,6 +31,7 @@ public class Connector : MonoBehaviour
   void Start()
   {
     clientId = System.Guid.NewGuid().ToString();
+    secrets = MqttSecrets.Load();
     ConnectToMqtt();
   }
 
@@ -66,6 +64,9 @@ public class Connector : MonoBehaviour
     if (isReconnecting)
     return;
 
+    if (secrets == null)
+    return;
+
     isReconnecting = true;
 
     try
@@ -73,7 +74,7 @@ public class Connector : MonoBehaviour
       // Créer un nouveau client si nécessaire
       if (client == null) {
         client = new MqttClient(
-          broker, port, true,
+          secrets.broker, secrets.port, true,
           null, null,
           MqttSslProtocols.TLSv1_2,
           (sender, cert, chain, sslPolicyErrors) => true
@@ -82,7 +83,7 @@ public class Connector : MonoBehaviour
 
       // Tenter la connexion
       if (!client.IsConnected) {
-        client.Connect(clientId, username, password);
+        client.Connect(clientId, secrets.username, secrets.password);
       }
 
       if (client.IsConnected){

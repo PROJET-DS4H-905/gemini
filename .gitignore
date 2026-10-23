@@ -15,6 +15,10 @@
 /[Uu]ser[Ss]ettings/
 *.log
 
+# Remove secrets
+/[Aa]ssets/StreamingAssets/secrets.json
+/[Aa]ssets/StreamingAssets/secrets.json.meta
+
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be commited to version control.
 *.blend1
 *.blend1.meta
