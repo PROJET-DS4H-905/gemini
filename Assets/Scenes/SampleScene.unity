@@ -518,7 +518,7 @@ GameObject:
   - component: {fileID: 1370412175}
   - component: {fileID: 1370412174}
   m_Layer: 0
-  m_Name: Connector
+  m_Name: MQTTConnector
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -536,10 +536,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b78959914d834444e9fe297984cc7405, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Connector
-  broker: mqtt.webprofs.fr
-  port: 8883
-  username: fablab2122
-  password: 2122
   topics:
   - FABLAB_21_22/unity/test/in
   publishTopic: FABLAB_21_22/unity/test/out
@@ -574,6 +570,7 @@ GameObject:
   - component: {fileID: 1626281870}
   - component: {fileID: 1626281874}
   - component: {fileID: 1626281875}
+  - component: {fileID: 1626281876}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -702,6 +699,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TestClient
   guid: 
+--- !u!114 &1626281876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1626281869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 821f355ab77ad422ea058c7ecaffe98b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Subscriber
+  connector: {fileID: 1370412174}
+  topic: FABLAB_21_22/unity/test/in
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
