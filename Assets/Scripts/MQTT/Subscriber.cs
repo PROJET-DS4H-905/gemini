@@ -2,6 +2,7 @@ using UnityEngine;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -10,10 +11,17 @@ public class Subscriber : MonoBehaviour {
   [SerializeField] private Connector connector;
   private Coroutine waitRoutine;
   private bool logicStarted;
+  private InfoCard infoCard;
+  private volatile string pendingText;
 
   public string topic;
 
 //-------------Unity LifeCycles-------------
+
+  private void Awake()
+  {
+    infoCard = GetComponent<InfoCard>();
+  }
 
   private void OnEnable()
   {
@@ -27,6 +35,17 @@ public class Subscriber : MonoBehaviour {
     {
       connector.client.MqttMsgPublishReceived -= OnMessageReceived;
     }
+  }
+
+  private void Update()
+  {
+    // OnMessageReceived tourne sur un thread M2Mqtt ; on applique ici, sur le main thread.
+    if (pendingText == null || infoCard == null)
+      return;
+
+    string text = pendingText;
+    pendingText = null;
+    infoCard.SetText(text);
   }
 
 //-------------Class Functions-------------
@@ -47,29 +66,28 @@ public class Subscriber : MonoBehaviour {
 
     string msg = Encoding.UTF8.GetString(e.Message);
 
-    string formattedMsg = $"[{receivedTopic}] {msg}";
+    Debug.Log($"Subscriber recieved [{receivedTopic}] {msg}");
 
-    Debug.Log($"Subscriber recieved {formattedMsg}");
+    if (infoCard == null) return;
 
-    // Tentative de parsing du JSON reçu
+    // Tentative de parsing du JSON reçu. OnMessageReceived tourne sur un thread M2Mqtt :
+    // on ne touche donc à AUCUN objet Unity ici, on prépare seulement la chaîne,
+    // qui sera appliquée dans Update() sur le main thread.
     try
     {
-     SensorData data = JsonConvert.DeserializeObject<SensorData>(msg);
-     if (data != null)
-     {
-       Debug.Log(data);
-     }
+      var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(msg);
+      if (data == null || data.Count == 0) return;
+
+      var sb = new StringBuilder();
+      foreach (var kvp in data)
+        sb.AppendLine($"{kvp.Key}: {kvp.Value}");
+
+      pendingText = sb.ToString().TrimEnd();
     }
     catch (System.Exception ex)
     {
-     Debug.LogWarning("⚠️ Erreur de parsing JSON : " + ex.Message);
+      Debug.LogWarning("⚠️ Erreur de parsing JSON : " + ex.Message);
     }
-  }
-
-  // Classe pour désérialiser le JSON
-  private class SensorData
-  {
-    public float value;
   }
 
 //-------------Coroutine-------------

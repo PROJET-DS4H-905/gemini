@@ -18,6 +18,7 @@ public class InfoCard : MonoBehaviour
 
     private RectTransform cardRect;
     private ISelectInput select;
+    private Text text;
 
     private void Start()
     {
@@ -45,7 +46,7 @@ public class InfoCard : MonoBehaviour
 
         var textGO = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
         textGO.transform.SetParent(panelGO.transform, false);
-        var text = textGO.GetComponent<Text>();
+        text = textGO.GetComponent<Text>();
         text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         text.text = gameObject.name + "\n" + cardText;
         text.fontSize = 26;
@@ -56,6 +57,14 @@ public class InfoCard : MonoBehaviour
         Stretch(textGO.GetComponent<RectTransform>());
 
         cardRect.gameObject.SetActive(false); // start hidden, shown on click
+    }
+
+    /// <summary>Updates the body text shown on the card.</summary>
+    public void SetText(string body)
+    {
+        cardText = body;
+        if (text != null)
+            text.text = gameObject.name + "\n" + body;
     }
 
     private static void Stretch(RectTransform rt)
