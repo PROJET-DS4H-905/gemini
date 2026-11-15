@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   build:
     name: Build my project
+    environment: Unity Build
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -23,7 +24,6 @@ jobs:
 
       # Test
       - name: Run tests
-        environment: Unity Build
         uses: game-ci/unity-test-runner@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -34,7 +34,6 @@ jobs:
 
       # Build
       - name: Build project
-        environment: Unity Build
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
