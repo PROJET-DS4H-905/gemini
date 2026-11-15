@@ -1,6 +1,4 @@
 using UnityEngine;
-using uPLibrary.Networking.M2Mqtt;
-using uPLibrary.Networking.M2Mqtt.Messages;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -31,15 +29,17 @@ public class Subscriber : MonoBehaviour {
 
   private void OnDestroy()
   {
-    if (connector.client != null)
-    {
-      connector.client.MqttMsgPublishReceived -= OnMessageReceived;
-    }
+    if (connector == null || connector.Connection == null)
+      return;
+
+    connector.OnConnected -= InitSubscriber;
+    connector.Connection.MessageReceived -= OnMessageReceived;
+    connector.Connection.Unsubscribe(topic);
   }
 
   private void Update()
   {
-    // OnMessageReceived tourne sur un thread M2Mqtt ; on applique ici, sur le main thread.
+    // OnMessageReceived peut tourner sur le thread M2Mqtt ; on applique ici, sur le main thread.
     if (pendingText == null || infoCard == null)
       return;
 
@@ -52,25 +52,30 @@ public class Subscriber : MonoBehaviour {
 
   private void InitSubscriber()
   {
-    if (logicStarted) return;
+    if (logicStarted || connector == null || connector.Connection == null)
+      return;
+
     logicStarted = true;
-    connector.client.MqttMsgPublishReceived += OnMessageReceived;
+
+    // L'abonnement est en place : on n'a plus besoin de l'événement de connexion.
+    connector.OnConnected -= InitSubscriber;
+
+    connector.Connection.MessageReceived += OnMessageReceived;
+    connector.Connection.Subscribe(topic, MqttQosLevel.AtMostOnce);
   }
 
-  void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
+  void OnMessageReceived(string receivedTopic, byte[] payload)
   {
-    string receivedTopic = e.Topic;
-
     // Check if the topic is the desired one
     if (topic != receivedTopic) return;
 
-    string msg = Encoding.UTF8.GetString(e.Message);
+    string msg = Encoding.UTF8.GetString(payload);
 
     Debug.Log($"Subscriber recieved [{receivedTopic}] {msg}");
 
     if (infoCard == null) return;
 
-    // Tentative de parsing du JSON reçu. OnMessageReceived tourne sur un thread M2Mqtt :
+    // Tentative de parsing du JSON reçu. Ce handler peut tourner sur le thread M2Mqtt :
     // on ne touche donc à AUCUN objet Unity ici, on prépare seulement la chaîne,
     // qui sera appliquée dans Update() sur le main thread.
     try
@@ -86,25 +91,21 @@ public class Subscriber : MonoBehaviour {
     }
     catch (System.Exception ex)
     {
-      Debug.LogWarning("⚠️ Erreur de parsing JSON : " + ex.Message);
+      Debug.LogWarning("Erreur de parsing JSON : " + ex.Message);
     }
   }
 
 //-------------Coroutine-------------
   private IEnumerator WaitForMqtt()
   {
-    // 1) Wait until the manager exists at all (Awake may not have run yet)
-    while (connector.client == null)
+    // 1) Wait until the connector and its connection exist (secrets loading is async on WebGL).
+    while (connector == null || connector.Connection == null)
       yield return null;
 
-    // 2) Fast path: already connected
-    if (connector.client.IsConnected)
-    {
-      InitSubscriber();
-      yield break;
-    }
-
-    // 3) Slow path: subscribe to the event and wait
+    // 2) Attach first, then check: avoids missing a connection that completes during setup.
     connector.OnConnected += InitSubscriber;
+
+    if (connector.Connection.IsConnected)
+      InitSubscriber();
   }
 }
